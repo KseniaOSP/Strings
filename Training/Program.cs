@@ -1,7 +1,13 @@
 ﻿// See https://aka.ms/new-console-template for more information
 using System.Net;
+using Training;
 
 
 
-WebClient wc = new WebClient();
-wc.DownloadFile();
+StockExchangeMonitor stockExchangeMonitor = new StockExchangeMonitor();
+stockExchangeMonitor.Start();
+
+
+
+
+

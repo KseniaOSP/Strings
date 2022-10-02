@@ -9,14 +9,15 @@ namespace archivation
     {
         static void Main(string[] args)
         {
-            string dirMain = "C:\\Users\\besed\\Каталог";
+            string dirMain = "C:\\Users\\besed\\Каталог"; // строковая переменная, которая содержит путь до файла
+            string comprFile = "C:\\Users\\besed\\archive.gz";
 
-            if (!Directory.Exists(dirMain))
+            if (!Directory.Exists(dirMain)) // проверяем существует ли каталог
             {
                 throw new Exception("The directory does not exist");
             }
             string[] files = Directory.GetFiles(dirMain);
-            string comprFile = "C:\\Users\\besed\\archive.gz";
+          
             
             CancellationTokenSource cancelTokenSource = new CancellationTokenSource();
             CancellationToken token = cancelTokenSource.Token;
@@ -27,7 +28,8 @@ namespace archivation
                 using GZipStream compressionStream = new GZipStream(targetStream, CompressionMode.Compress);
                 foreach (string file in files)
                 {
-                    token.ThrowIfCancellationRequested();
+                    if (token.IsCancellationRequested) // 
+                        return;
                     using FileStream sourceStream = new FileStream(file, FileMode.Open);
                     sourceStream.CopyTo(compressionStream);
                     Console.WriteLine(file);
@@ -36,19 +38,24 @@ namespace archivation
             }, token);
             task.Start();
             //task.Wait();
-            Console.WriteLine("Press ESC to stop");
-            do
+            
+            var uiTask = new Task(() =>
             {
-                while (!Console.KeyAvailable)
+                Console.WriteLine("Press ESC to stop");
+                do
                 {
-                    if (task.IsCompleted)
-                        return;
-                }
-            } while (Console.ReadKey(true).Key != ConsoleKey.Escape);
+                    while (!Console.KeyAvailable)
+                    {
+                        if (token.IsCancellationRequested) // 
+                            return;
+                    }
+                } while (Console.ReadKey(true).Key != ConsoleKey.Escape);
+            }, token);
+            uiTask.Start();
 
+            Task.WaitAny(task,uiTask);
             cancelTokenSource.Cancel();
             task.Wait();
-
 
         }
 
